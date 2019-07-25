@@ -37,6 +37,11 @@ namespace TreeViewScrollSample
             // ContainersGenerated になるまで待つ
             Task waitUntilContainersGenerated(TreeViewItem container)
             {
+                if (container.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
+                {
+                    return Task.CompletedTask;
+                }
+
                 var tcs = new TaskCompletionSource<object>(container);
                 void statusChanged(object _, EventArgs __)
                 {
@@ -45,6 +50,11 @@ namespace TreeViewScrollSample
                         tcs.SetResult(null);
                         container.ItemContainerGenerator.StatusChanged -= statusChanged;
                         return;
+                    }
+
+                    if (container.ItemContainerGenerator.Status == GeneratorStatus.Error)
+                    {
+                        tcs.SetException(new Exception("ItemContainerGenerator.Status is Error."));
                     }
                 }
 
@@ -61,10 +71,7 @@ namespace TreeViewScrollSample
             // 開く
             container.IsExpanded = true;
             // 子の ItemContainerGenerator のステータスが Generated になるまで待つ
-            if (container.ItemContainerGenerator.Status != GeneratorStatus.ContainersGenerated)
-            {
-                await waitUntilContainersGenerated(container);
-            }
+            await waitUntilContainersGenerated(container);
 
             // スクロール先を取得してスクロール
             var targetContainer = (TreeViewItem)container.ItemContainerGenerator.ContainerFromItem(target);
